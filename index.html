@@ -145,6 +145,7 @@
     const hlsUrl = getQueryParam('url');
 
     let player;
+
     if (hlsUrl) {
         // Initialize Clappr Player
         player = new Clappr.Player({
@@ -170,7 +171,7 @@
             levels.forEach((level, index) => {
                 const option = document.createElement('option');
                 option.value = index;
-                option.textContent = ${level.height}p; // Display resolution (e.g., 144p, 240p, etc.)
+                option.textContent = `${level.height}p`; // Display resolution (e.g., 144p, 240p, etc.)
                 qualitySelector.appendChild(option);
             });
         });
