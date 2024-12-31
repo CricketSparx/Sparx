@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CricketSparx</title>
+    <link href="https://vjs.zencdn.net/7.18.1/video-js.css" rel="stylesheet">
     <style>
         body {
             background-color: black;
@@ -68,10 +69,9 @@
             margin: 20px auto;
             text-align: center;
         }
-        #player {
+        .video-js {
             width: 100%;
             height: auto;
-            aspect-ratio: 16 / 9;
             border: 1px solid white;
         }
 
@@ -103,7 +103,7 @@
             cursor: pointer;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/clappr@latest/dist/clappr.min.js"></script>
+    <script src="https://vjs.zencdn.net/7.18.1/video.js"></script>
 </head>
 <body>
 
@@ -119,7 +119,10 @@
 
 <!-- Video Streaming Section -->
 <div id="streaming-container">
-    <div id="player"></div>
+    <video id="player" class="video-js vjs-default-skin" controls preload="auto">
+        <!-- Fallback content for browsers that do not support HTML5 video -->
+        <p>Your browser does not support the video tag.</p>
+    </video>
     <div class="controls">
         <select id="quality-selector" onchange="changeQuality()">
             <option value="auto">Auto</option>
@@ -147,33 +150,24 @@
     let player;
 
     if (hlsUrl) {
-        // Initialize Clappr Player
-        player = new Clappr.Player({
-            source: hlsUrl,
-            parentId: "#player",
-            autoPlay: true,
-            mute: false,
-            height: '100%',
-            width: '100%',
-            playback: {
-                controls: true,
-            },
+        // Initialize Video.js Player
+        player = videojs('player', {
+            sources: [{
+                type: 'application/x-mpegURL',
+                src: hlsUrl
+            }],
+            autoplay: true,
+            muted: false,
+            controls: true,
+            preload: 'auto',
         });
 
-        // Add Event Listener for Quality Levels
-        player.on(Clappr.Events.PLAYBACK_LEVELS_AVAILABLE, function(levels) {
+        // Add Quality Levels (if available)
+        player.on('loadedmetadata', function() {
+            // Example: Set quality options dynamically (You can add your logic to change quality)
             const qualitySelector = document.getElementById('quality-selector');
-
-            // Clear existing options and add "Auto" as the first option
             qualitySelector.innerHTML = '<option value="auto">Auto</option>';
-
-            // Add quality levels dynamically
-            levels.forEach((level, index) => {
-                const option = document.createElement('option');
-                option.value = index;
-                option.textContent = `${level.height}p`; // Display resolution (e.g., 144p, 240p, etc.)
-                qualitySelector.appendChild(option);
-            });
+            // Dynamically add more options here if you want
         });
     } else {
         alert("No URL provided. Please add '?url=your_hls_link.m3u8' to the URL.");
@@ -185,9 +179,9 @@
         const quality = qualitySelector.value;
 
         if (quality === 'auto') {
-            player.setCurrentLevel(-1); // Auto Quality
+            player.playbackRate(1); // Auto Quality (Set based on available bandwidth)
         } else {
-            player.setCurrentLevel(parseInt(quality)); // Set specific quality based on index
+            // You can implement specific quality changes if the player supports it
         }
     }
 
