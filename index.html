@@ -123,6 +123,12 @@
     <div class="controls">
         <select id="quality-selector" onchange="changeQuality()">
             <option value="auto">Auto</option>
+            <option value="0">144p</option>
+            <option value="1">240p</option>
+            <option value="2">360p</option>
+            <option value="3">480p</option>
+            <option value="4">720p</option>
+            <option value="5">1080p</option>
         </select>
         <button id="telegram-button" onclick="joinTelegram()">Join Telegram</button>
     </div>
@@ -157,14 +163,14 @@
         player.on(Clappr.Events.PLAYBACK_LEVELS_AVAILABLE, function(levels) {
             const qualitySelector = document.getElementById('quality-selector');
 
-            // Clear existing options
+            // Clear existing options and add "Auto" as the first option
             qualitySelector.innerHTML = '<option value="auto">Auto</option>';
 
             // Add quality levels dynamically
             levels.forEach((level, index) => {
                 const option = document.createElement('option');
                 option.value = index;
-                option.textContent = ${level.height}p; // Display resolution
+                option.textContent = ${level.height}p; // Display resolution (e.g., 144p, 240p, etc.)
                 qualitySelector.appendChild(option);
             });
         });
@@ -180,7 +186,7 @@
         if (quality === 'auto') {
             player.setCurrentLevel(-1); // Auto Quality
         } else {
-            player.setCurrentLevel(parseInt(quality)); // Set specific quality
+            player.setCurrentLevel(parseInt(quality)); // Set specific quality based on index
         }
     }
 
@@ -192,7 +198,7 @@
     // Function to close the popup
     function closePopup() {
         const popup = document.getElementById('popup');
-        popup.style.display = 'none';
+        popup.style.display = 'none'; // Hides the popup
     }
 
     // Function to open Telegram channel
@@ -203,4 +209,3 @@
 
 </body>
 </html>
-    
