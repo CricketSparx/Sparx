@@ -68,30 +68,31 @@
             margin: 20px auto;
             text-align: center;
         }
-        video {
+        #player {
             width: 100%;
             height: auto;
+            aspect-ratio: 16 / 9;
             border: 1px solid white;
         }
 
-        /* Quality Selector */
-        #quality-selector {
-            margin: 10px 0;
+        /* Button and Quality Selector */
+        .controls {
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
         }
-        #quality-selector select {
+
+        select {
             padding: 5px;
             border: 1px solid white;
             border-radius: 5px;
             background-color: black;
             color: white;
             font-size: 16px;
-            margin-right: 10px; /* Space between dropdown and button */
         }
 
-        /* Telegram Join Button */
         #telegram-button {
             padding: 10px 20px;
             background-color: #007bff;
@@ -102,7 +103,7 @@
             cursor: pointer;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.0/dist/hls.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/clappr@latest/dist/clappr.min.js"></script>
 </head>
 <body>
 
@@ -118,22 +119,16 @@
 
 <!-- Video Streaming Section -->
 <div id="streaming-container">
-    <video id="videoPlayer" controls></video>
-    <div id="quality-selector">
-        <label for="quality">Select Quality: </label>
-        <select id="quality" onchange="changeQuality()">
-            <option value="-1" selected>Auto</option>
+    <div id="player"></div>
+    <div class="controls">
+        <select id="quality-selector" onchange="changeQuality()">
+            <option value="auto">Auto</option>
         </select>
-        <!-- Telegram Join Button -->
         <button id="telegram-button" onclick="joinTelegram()">Join Telegram</button>
     </div>
 </div>
 
 <script>
-    const video = document.getElementById('videoPlayer');
-    const qualitySelector = document.getElementById('quality');
-    const hls = new Hls();
-
     // Function to get the URL parameter
     function getQueryParam(param) {
         const urlParams = new URLSearchParams(window.location.search);
@@ -143,38 +138,50 @@
     // Get HLS URL from query parameter
     const hlsUrl = getQueryParam('url');
 
+    let player;
     if (hlsUrl) {
-        // Initialize HLS.js
-        if (Hls.isSupported()) {
-            hls.loadSource(hlsUrl);
-            hls.attachMedia(video);
+        // Initialize Clappr Player
+        player = new Clappr.Player({
+            source: hlsUrl,
+            parentId: "#player",
+            autoPlay: true,
+            mute: false,
+            height: '100%',
+            width: '100%',
+            playback: {
+                controls: true,
+            },
+        });
 
-            // Populate Quality Levels
-            hls.on(Hls.Events.MANIFEST_PARSED, function () {
-                const levels = hls.levels;
-                levels.forEach((level, index) => {
-                    const option = document.createElement('option');
-                    option.value = index;
-                    option.textContent = `${level.height}p`; // Quality in resolution
-                    qualitySelector.appendChild(option);
-                });
+        // Add Event Listener for Quality Levels
+        player.on(Clappr.Events.PLAYBACK_LEVELS_AVAILABLE, function(levels) {
+            const qualitySelector = document.getElementById('quality-selector');
+
+            // Clear existing options
+            qualitySelector.innerHTML = '<option value="auto">Auto</option>';
+
+            // Add quality levels dynamically
+            levels.forEach((level, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = ${level.height}p; // Display resolution
+                qualitySelector.appendChild(option);
             });
-
-            // Handle Quality Change
-            function changeQuality() {
-                const quality = parseInt(qualitySelector.value);
-                if (quality === -1) {
-                    hls.currentLevel = -1; // Auto Quality
-                } else {
-                    hls.currentLevel = quality; // Set selected quality
-                }
-            }
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            // Native HLS Support (e.g., Safari)
-            video.src = hlsUrl;
-        }
+        });
     } else {
         alert("No URL provided. Please add '?url=your_hls_link.m3u8' to the URL.");
+    }
+
+    // Function to change quality
+    function changeQuality() {
+        const qualitySelector = document.getElementById('quality-selector');
+        const quality = qualitySelector.value;
+
+        if (quality === 'auto') {
+            player.setCurrentLevel(-1); // Auto Quality
+        } else {
+            player.setCurrentLevel(parseInt(quality)); // Set specific quality
+        }
     }
 
     // Function to handle "Join Now" button
@@ -196,3 +203,4 @@
 
 </body>
 </html>
+    
