@@ -3,121 +3,194 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cricket Sparx</title>
-
-    <!-- Include HLS.js Library -->
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-
+    <title>CricketSparx</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #1e1e1e;
-            color: #fff;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-        }
-        h1 {
-            margin: 10px 0;
-        }
-        #video-player {
-            width: 80%;
-            max-width: 800px;
-            height: 450px;
-            background: #000;
-            border: 2px solid #444;
-            border-radius: 10px;
-        }
-        button {
-            background-color: #0078d4;
-            color: #fff;
-            cursor: pointer;
-            font-size: 16px;
-            border-radius: 5px;
-            padding: 10px 20px;
-            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
-        }
-        button:hover {
-            background-color: #005a9e;
-        }
-        #quality-selector {
-            width: 120px;
-            margin-left: 10px;
-            padding: 10px;
             background-color: black;
             color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Full-Screen Popup */
+        #popup {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            color: white;
+            z-index: 9999;
+            text-align: center;
+        }
+
+        #popup button {
+            margin: 10px;
+            padding: 10px 20px;
             border: none;
             border-radius: 5px;
             font-size: 16px;
+            cursor: pointer;
+        }
+        #join-now {
+            background-color: #007bff;
+            color: white;
+        }
+        #already-joined {
+            background-color: #28a745;
+            color: white;
+        }
+
+        /* Header */
+        #header {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+            color: white;
+        }
+
+        /* Video Container */
+        #streaming-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            text-align: center;
+        }
+        video {
+            width: 100%;
+            height: auto;
+            border: 1px solid white;
+        }
+
+        /* Quality Selector */
+        #quality-selector {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #quality-selector select {
+            padding: 5px;
+            border: 1px solid white;
+            border-radius: 5px;
+            background-color: black;
+            color: white;
+            font-size: 16px;
+            margin-right: 10px; /* Space between dropdown and button */
+        }
+
+        /* Telegram Join Button */
+        #telegram-button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.0/dist/hls.min.js"></script>
 </head>
 <body>
 
-<h1>Cricket Sparx</h1>
+<!-- Full-Screen Popup -->
+<div id="popup">
+    <p>Join our Telegram channel <a href="https://t.me/CricketSparx" target="_blank" style="color: lightblue; text-decoration: none;">@CricketSparx</a> for more links!</p>
+    <button id="join-now" onclick="joinNow()">Join Now</button>
+    <button id="already-joined" onclick="closePopup()">Already Joined</button>
+</div>
 
-<video id="video-player" controls></video>
+<!-- Header -->
+<div id="header">CricketSparx</div>
 
-<div style="display: flex; justify-content: center; align-items: center; margin-top: 10px;">
-    <button id="telegram-button" onclick="joinTelegram()">Join Telegram</button>
-    <select id="quality-selector" onchange="changeQuality()">
-        <option value="auto">Auto</option>
-        <option value="144p">144p</option>
-        <option value="240p">240p</option>
-        <option value="360p">360p</option>
-        <option value="480p">480p</option>
-        <option value="720p">720p</option>
-        <option value="1080p">1080p</option>
-    </select>
+<!-- Video Streaming Section -->
+<div id="streaming-container">
+    <video id="videoPlayer" controls></video>
+    <div id="quality-selector">
+        <label for="quality">Select Quality: </label>
+        <select id="quality" onchange="changeQuality()">
+            <option value="-1" selected>Auto</option>
+        </select>
+        <!-- Telegram Join Button -->
+        <button id="telegram-button" onclick="joinTelegram()">Join Telegram</button>
+    </div>
 </div>
 
 <script>
-    let player = document.getElementById('video-player');
-    let streamUrl = getQueryParam('url'); // Get the stream URL from query parameters
+    const video = document.getElementById('videoPlayer');
+    const qualitySelector = document.getElementById('quality');
+    const hls = new Hls();
 
-    // Function to get query parameter
+    // Function to get the URL parameter
     function getQueryParam(param) {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get(param);
     }
 
-    // Load the video using HLS.js
-    function loadStream(url) {
-        if (!url) {
-            alert("No stream URL provided!");
-            return;
-        }
+    // Get HLS URL from query parameter
+    const hlsUrl = getQueryParam('url');
 
+    if (hlsUrl) {
+        // Initialize HLS.js
         if (Hls.isSupported()) {
-            const hls = new Hls();
-            hls.loadSource(url);
-            hls.attachMedia(player);
-        } else if (player.canPlayType('application/vnd.apple.mpegurl')) {
-            player.src = url;
-        } else {
-            alert("Your browser does not support HLS streaming.");
+            hls.loadSource(hlsUrl);
+            hls.attachMedia(video);
+
+            // Populate Quality Levels
+            hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                const levels = hls.levels;
+                levels.forEach((level, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = `${level.height}p`; // Quality in resolution
+                    qualitySelector.appendChild(option);
+                });
+            });
+
+            // Handle Quality Change
+            function changeQuality() {
+                const quality = parseInt(qualitySelector.value);
+                if (quality === -1) {
+                    hls.currentLevel = -1; // Auto Quality
+                } else {
+                    hls.currentLevel = quality; // Set selected quality
+                }
+            }
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // Native HLS Support (e.g., Safari)
+            video.src = hlsUrl;
         }
+    } else {
+        alert("No URL provided. Please add '?url=your_hls_link.m3u8' to the URL.");
     }
 
-    // Change video quality (dummy logic; needs backend support for adaptive streaming)
-    function changeQuality() {
-        const quality = document.getElementById('quality-selector').value;
-        alert(`Selected Quality: ${quality}. Adaptive streaming required for implementation.`);
-    }
-
-    // Join Telegram group
-    function joinTelegram() {
+    // Function to handle "Join Now" button
+    function joinNow() {
         window.open('https://t.me/CricketSparx', '_blank');
     }
 
-    // Auto-load stream if URL is provided
-    if (streamUrl) {
-        loadStream(streamUrl);
-    } else {
-        alert("No stream URL found, contact with owner");
+    // Function to close the popup
+    function closePopup() {
+        const popup = document.getElementById('popup');
+        popup.style.display = 'none';
+    }
+
+    // Function to open Telegram channel
+    function joinTelegram() {
+        window.open('https://t.me/CricketSparx', '_blank');
     }
 </script>
 
